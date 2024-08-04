@@ -8,7 +8,7 @@ from app import oauth2, schemas
 from sqlalchemy.ext.asyncio import AsyncSession
 from .func_private import change_message, delete_message, fetch_last_private_messages, mark_messages_as_read, process_vote
 from .func_private import get_recipient_by_id
-
+from app.AI import sayory
 
 # Налаштування логування
 logging.basicConfig(filename='_log/private_message.log', format='%(asctime)s - %(levelname)s - %(message)s')
@@ -134,23 +134,55 @@ async def web_private_endpoint(
 
                 
             elif 'send' in data:
+                
                 message_data = data['send']
                 original_message_id = message_data['original_message_id']
                 original_message = message_data['message']
                 file_url = message_data['fileUrl']
                     
-                await manager.send_private_all(
-                                    message=original_message,
-                                    file=file_url,
-                                    receiver_id=receiver_id,
-                                    sender_id=user.id,
-                                    user_name=user.user_name,
-                                    avatar=user.avatar,
-                                    verified=user.verified,
-                                    id_return=original_message_id,
-                                    is_read=True
-                                    )
-                await mark_messages_as_read(session, user.id, receiver_id)
+                try:
+                    # Відправка повідомлення користувача, незалежно від ID одержувача
+                    await manager.send_private_all(
+                        message=original_message,
+                        file=file_url,
+                        receiver_id=receiver_id,
+                        sender_id=user.id,
+                        user_name=user.user_name,
+                        avatar=user.avatar,
+                        verified=user.verified,
+                        id_return=original_message_id,
+                        is_read=True
+                    )
+                    await mark_messages_as_read(session, user.id, receiver_id)
+                    logger.info(f"Sent message: {original_message}")
+                except Exception as e:
+                    logger.error(f"Error sending message: {e}", exc_info=True)
+                    await websocket.send_json({"message": f"Error sending message: {e}"})
+
+                if receiver_id == 2:
+                    try:
+                        response_sayory = await sayory.ask_to_gpt(original_message)
+                        
+                        for message in response_sayory:
+                            await manager.send_private_all(
+                                message=message,
+                                file=file_url,
+                                receiver_id=user.id,
+                                sender_id=receiver_id,
+                                user_name="SayOry",
+                                avatar="https://tygjaceleczftbswxxei.supabase.co/storage/v1/object/public/image_bucket/inne/image/girl_5.webp",
+                                verified=True,
+                                id_return=original_message_id,
+                                is_read=True
+                            )
+                            await asyncio.sleep(1)
+                        await mark_messages_as_read(session, user.id, receiver_id)
+                        logger.info(f"Sent GPT response: {response_sayory}")
+                    except Exception as e:
+                        logger.error(f"Error processing GPT query: {e}", exc_info=True)
+                        await websocket.send_json({"message": f"Error processing GPT query: {e}"})
+                        
+                
                                             
     except WebSocketDisconnect:
         task.cancel()

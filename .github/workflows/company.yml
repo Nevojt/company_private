@@ -33,6 +33,6 @@ jobs:
         SSH_USER: ${{ secrets.SSH_USER_COMPANY }}
       run: |
         sshpass -p $SSH_PASSWORD ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "
-        
         cd /home/$SSH_USER/private && \
-        "
+        ./key_git_script"
+
