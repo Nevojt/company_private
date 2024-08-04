@@ -9,6 +9,8 @@ from sqlalchemy import and_, asc, or_, update, func
 from app import models, schemas
 from app.config import settings
 
+from app.AI import sayory
+
 import base64
 from cryptography.fernet import Fernet, InvalidToken
 
@@ -254,3 +256,6 @@ async def delete_message(id_message: int,
     await session.commit()
 
     return {"message": "Message deleted successfully"}
+
+
+    
