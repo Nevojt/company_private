@@ -141,7 +141,7 @@ async def web_private_endpoint(
                 file_url = message_data['fileUrl']
                     
                 try:
-                    # Відправка повідомлення користувача, незалежно від ID одержувача
+
                     await manager.send_private_all(
                         message=original_message,
                         file=file_url,

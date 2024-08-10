@@ -37,4 +37,4 @@ async def ask_to_gpt(ask_to_chat: str) -> str:
         return response
     
     except Exception as e:
-        return "Sorry, I couldn't process your request."
+        return f"Sorry, I couldn't process your request. {e}"
