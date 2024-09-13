@@ -45,8 +45,8 @@ async def verify_access_token(token: str, credentials_exception, db: AsyncSessio
         user = await db.execute(select(models.User).filter(models.User.id == user_id))
         user = user.scalar()
 
-        if user is None or str(user.password_changed) != payload['password_changed']:
-            raise credentials_exception 
+        # if user is None or str(user.password_changed) != payload['password_changed']:
+        #     raise credentials_exception 
 
         token_data = schemas.TokenData(id=user_id)
     except JWTError:
@@ -65,7 +65,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme),
         db (AsyncSession): The database session.
 
     Returns:
-        models.User: The currently authenticated user.
+        user_model.User: The currently authenticated user.
 
     Raises:
         HTTPException: If the credentials are invalid.
