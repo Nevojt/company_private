@@ -1,6 +1,6 @@
 import asyncio
 import logging
-import json
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, status
 from app.connection_manager import ConnectionManagerPrivate
 from app.database import get_async_session
