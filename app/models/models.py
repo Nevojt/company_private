@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Enum
 from enum import Enum as PythonEnum
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
-from .database import Base
+from app.database.database import Base
 
 
 class UserRole(str, PythonEnum):

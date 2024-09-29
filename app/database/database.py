@@ -2,7 +2,7 @@ import time
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from typing import AsyncGenerator
-from .config import settings
+from app.settings.config import settings
 import psycopg2
 from psycopg2.extras import RealDictCursor
 

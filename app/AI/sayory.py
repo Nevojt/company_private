@@ -1,7 +1,7 @@
 
 
 from openai import AsyncOpenAI
-from app.config import settings
+from app.settings.config import settings
 
 sayori_key=settings.openai_api_key
 

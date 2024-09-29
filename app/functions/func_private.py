@@ -4,10 +4,12 @@ from fastapi import HTTPException, status
 from pydantic import ValidationError
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional
+from typing import List, Optional, Dict
 from sqlalchemy import and_, asc, or_, update, func
-from app import models, schemas
-from app.config import settings
+from app.models import models
+from app.schemas import schemas
+from app.schemas.schemas import SocketModel
+from app.settings.config import settings
 
 import base64
 from cryptography.fernet import Fernet, InvalidToken
@@ -49,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 
 
-async def fetch_last_private_messages(session: AsyncSession, sender_id: int, receiver_id: int) -> List[dict]:
+async def fetch_last_private_messages(session: AsyncSession, sender_id: int, receiver_id: int) -> list[SocketModel]:
     
     """
     Fetch the last private messages between two users from the database.
@@ -89,28 +91,74 @@ async def fetch_last_private_messages(session: AsyncSession, sender_id: int, rec
         if decrypted_message is None:
             decrypted_message = None
 
-        message_data = {
-            "created_at": private.created_at,
-            "id": private.id,
-            "receiver_id": private.sender_id,
-            "message": decrypted_message,
-            "fileUrl": private.fileUrl,
-            "id_return": private.id_return,
-            "user_name": user.user_name,
-            "verified": user.verified,
-            "avatar": user.avatar,
-            "is_read": private.is_read,
-            "vote": votes,
-            "edited": private.edited
-        }
-        try:
-            messages.append(schemas.SocketModel(**message_data))
-        except ValidationError as e:
-            raise HTTPException(status_code=400, detail=f"Data validation error: {str(e)}")
-            
-    messages.reverse()  # Optionally reverse the list if needed
+        messages.append(
+            schemas.SocketModel(
+                created_at=private.created_at,
+                id=private.id,
+                receiver_id=private.receiver_id,
+                message=decrypted_message,
+                fileUrl=private.fileUrl,
+                id_return=private.id_return,
+                user_name=user.user_name if user is not None else "Unknown user",
+                verified=user.verified,
+                avatar=user.avatar if user is not None else "https://tygjaceleczftbswxxei.supabase.co/storage/v1/object/public/image_bucket/inne/image/photo_2024-06-14_19-20-40.jpg",
+                is_read=private.is_read,
+                vote=votes,
+                edited=private.edited
+            )
+        )
+    # messages.reverse()
     return messages
 
+async def send_messages_via_websocket(messages, websocket):
+    for message in messages:
+        wrapped_message = schemas.wrap_message(message)
+        json_message = wrapped_message.model_dump_json()
+        await websocket.send_text(json_message)
+
+
+async def fetch_one_message(message_id: int, session: AsyncSession): #-> schemas.SocketModel:
+    query = select(
+        models.PrivateMessage,
+        models.User,
+        func.coalesce(func.sum(models.PrivateMessageVote.dir), 0).label('votes')
+    ).outerjoin(
+        models.PrivateMessageVote, models.PrivateMessage.id == models.PrivateMessageVote.message_id
+    ).outerjoin(
+        models.User, models.PrivateMessage.receiver_id == models.User.id
+    ).filter(
+        models.PrivateMessage.id == message_id
+    ).group_by(
+        models.PrivateMessage.id, models.User.id
+    )
+
+    result = await session.execute(query)
+    raw_message = result.first()
+
+    # Convert raw messages to SocketModel
+    if raw_message:
+        private, user, votes = raw_message
+        decrypted_message = await async_decrypt(private.message)
+
+        message = schemas.SocketModel(
+            created_at=private.created_at,
+            id=private.id,
+            receiver_id=private.receiver_id,
+            message=decrypted_message,
+            fileUrl=private.fileUrl,
+            id_return=private.id_return,
+            user_name=user.user_name if user is not None else "Unknown user",
+            verified=user.verified,
+            avatar=user.avatar if user is not None else "https://tygjaceleczftbswxxei.supabase.co/storage/v1/object/public/image_bucket/inne/image/photo_2024-06-14_19-20-40.jpg",
+            is_read=private.is_read,
+            vote=votes,
+            edited=private.edited
+        )
+        wrapped_message_update = schemas.wrap_message_update(message)
+        return wrapped_message_update.model_dump_json()
+
+    else:
+        raise HTTPException(status_code=404, detail="Message not found")
 
 
 

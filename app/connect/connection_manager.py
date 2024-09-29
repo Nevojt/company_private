@@ -1,13 +1,13 @@
 from datetime import datetime
-import json
 import pytz
 import logging
 from fastapi import WebSocket
-from app.database import async_session_maker
-from app import models, schemas
+from app.database.database import async_session_maker
+from app.models import models
+from app.schemas import schemas
 from sqlalchemy import insert
 from typing import Dict, Optional, Tuple
-from app.routers.func_private import async_encrypt
+from app.functions.func_private import async_encrypt
 
 
 # Налаштування логування
@@ -60,7 +60,8 @@ class ConnectionManagerPrivate:
         )
 
         # Серіалізація даних моделі у JSON
-        message_json = socket_message.model_dump_json()
+        wrapped_message = schemas.wrap_message(socket_message)
+        message_json = wrapped_message.model_dump_json()
 
 
         if sender_to_recipient in self.active_connections:
@@ -68,7 +69,7 @@ class ConnectionManagerPrivate:
 
         if recipient_to_sender in self.active_connections:
             await self.active_connections[recipient_to_sender].send_text(message_json)
-        
+
 
     @staticmethod
     async def add_private_all_to_database(sender_id: int, receiver_id: int,

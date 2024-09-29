@@ -1,7 +1,7 @@
 
 from sqlalchemy import update
 from app import models
-from app.routers.func_private import mark_messages_as_read
+from app.functions.func_private import mark_messages_as_read
 
 
 

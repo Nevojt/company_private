@@ -2,12 +2,13 @@ import asyncio
 import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, status
-from app.connection_manager import ConnectionManagerPrivate
-from app.database import get_async_session
-from app import oauth2, schemas
+from app.connect.connection_manager import ConnectionManagerPrivate
+from app.database.database import get_async_session
+from app.schemas import schemas
+from ..security import oauth2
 from sqlalchemy.ext.asyncio import AsyncSession
-from .func_private import change_message, delete_message, fetch_last_private_messages, mark_messages_as_read, process_vote
-from .func_private import get_recipient_by_id
+from app.functions.func_private import change_message, delete_message, fetch_last_private_messages, mark_messages_as_read, process_vote
+from app.functions.func_private import get_recipient_by_id, send_messages_via_websocket, fetch_one_message
 from app.AI import sayory
 
 # Налаштування логування
@@ -56,13 +57,16 @@ async def web_private_endpoint(
    
     await manager.connect(websocket, user.id, receiver_id)
     await mark_messages_as_read(session, user.id, receiver_id)
+
     messages = await fetch_last_private_messages(session, user.id, receiver_id)
-    messages.reverse()
-    
-    
-    for message in messages:  
-        message_json = message.json()
-        await websocket.send_text(message_json)
+    # messages.reverse()
+    await send_messages_via_websocket(messages, websocket)
+
+    #
+    #
+    # for message in messages:
+    #     message_json = message.json()
+    #     await websocket.send_text(message_json)
     
     async def periodic_task():
         while True:
@@ -74,23 +78,19 @@ async def web_private_endpoint(
     try:
         while True:
             data = await websocket.receive_json()
+
+            # Created likes
             if 'vote' in data:
                 try:
                     vote_data = schemas.Vote(**data['vote'])
                     await process_vote(vote_data, session, user)
                  
-                    messages = await fetch_last_private_messages(session, user.id, receiver_id)
-                    
-                    await websocket.send_json({"message": "Vote posted "})
-                    messages.reverse()
-    
-                    for message in messages:  
-                        message_json = message.model_dump_json()
-                        await websocket.send_text(message_json)
-                                
+                    message_json = await fetch_one_message(vote_data.message_id, session)
+                    await websocket.send_text(message_json)
+                    # await websocket.send_json({"message": "Vote posted "})
 
                 except Exception as e:
-                    logger.error(f"Error processing vote: {e}", exc_info=True)  # Запис помилки
+                    logger.error(f"Error processing vote: {e}", exc_info=True)
                     await websocket.send_json({"message": f"Error processing vote: {e}"})
                 
             # Block delete message       

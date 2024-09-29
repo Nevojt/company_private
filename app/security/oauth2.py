@@ -3,12 +3,13 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
-from . import schemas, models
+from app.schemas import schemas
+from app.models import models
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
-from .config import settings
-from .database import get_async_session
+from app.settings.config import settings
+from app.database.database import get_async_session
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -34,11 +35,10 @@ async def create_access_token(data: dict, db: AsyncSession):
     return encoded_jwt
 
 
-
 async def verify_access_token(token: str, credentials_exception, db: AsyncSession):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("user_id")
+        user_id: int = payload.get("user_id")
         if user_id is None:
             raise credentials_exception
 
@@ -46,7 +46,7 @@ async def verify_access_token(token: str, credentials_exception, db: AsyncSessio
         user = user.scalar()
 
         if user is None or str(user.password_changed) != payload['password_changed']:
-            raise credentials_exception 
+            raise credentials_exception
 
         token_data = schemas.TokenData(id=user_id)
     except JWTError:
@@ -54,32 +54,22 @@ async def verify_access_token(token: str, credentials_exception, db: AsyncSessio
 
     return token_data
 
-    
+
 async def get_current_user(token: str = Depends(oauth2_scheme),
                            db: AsyncSession = Depends(get_async_session)):
-    """
-    Get the currently authenticated user.
-
-    Args:
-        token (str): The access token.
-        db (AsyncSession): The database session.
-
-    Returns:
-        models.User: The currently authenticated user.
-
-    Raises:
-        HTTPException: If the credentials are invalid.
-    """
     credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED, 
-        detail="Could not validate credentials", 
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"}
-        )
-    
+    )
+
     token = await verify_access_token(token, credentials_exception, db)
-    
-    
+
     user = await db.execute(select(models.User).filter(models.User.id == token.id))
     user = user.scalar()
-    
+
+
+    if user is None:
+        raise credentials_exception
+
     return user
