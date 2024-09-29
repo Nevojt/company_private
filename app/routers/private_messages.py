@@ -87,11 +87,22 @@ async def web_private_endpoint(
                  
                     message_json = await fetch_one_message(vote_data.message_id, session)
                     await websocket.send_text(message_json)
-                    # await websocket.send_json({"message": "Vote posted "})
 
                 except Exception as e:
                     logger.error(f"Error processing vote: {e}", exc_info=True)
                     await websocket.send_json({"message": f"Error processing vote: {e}"})
+
+            elif 'update' in data:
+                try:
+                    message_data = schemas.SocketUpdate(**data['update'])
+                    await change_message(message_data.id, message_data, session, user)
+
+                    message_json = await fetch_one_message(message_data.id, session)
+                    await websocket.send_text(message_json)
+
+                except Exception as e:
+                    logger.error(f"Error processing vote: {e}", exc_info=True)
+                    await websocket.send_json({"message": f"Error processing change: {e}"})
                 
             # Block delete message       
             elif 'delete_message' in data:
@@ -113,24 +124,7 @@ async def web_private_endpoint(
                     logger.error(f"Error processing delete: {e}", exc_info=True)
                     await websocket.send_json({"message": f"Error processing change: {e}"})
                     
-            elif 'change_message' in data:
-                try:
-                    message_data = schemas.SocketUpdate(**data['change_message'])
-                    await change_message(message_data.id, message_data, session, user)
-                    
-                    messages = await fetch_last_private_messages(session, user.id, receiver_id)
-                    
-                    await websocket.send_json({"message": "Message updated "})
-                    messages.reverse()
-                        
-                    for message in messages:  
-                        message_json =  message.model_dump_json()
-                        await websocket.send_text(message_json)
-                    
 
-                except Exception as e:
-                    logger.error(f"Error processing vote: {e}", exc_info=True)  # Запис помилки
-                    await websocket.send_json({"message": f"Error processing change: {e}"})
 
                 
             elif 'send' in data:
