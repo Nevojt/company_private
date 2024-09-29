@@ -95,7 +95,7 @@ async def fetch_last_private_messages(session: AsyncSession, sender_id: int, rec
             schemas.SocketModel(
                 created_at=private.created_at,
                 id=private.id,
-                receiver_id=private.receiver_id,
+                receiver_id=private.sender_id,
                 message=decrypted_message,
                 fileUrl=private.fileUrl,
                 id_return=private.id_return,
@@ -143,7 +143,7 @@ async def fetch_one_message(message_id: int, session: AsyncSession): #-> schemas
         message = schemas.SocketModel(
             created_at=private.created_at,
             id=private.id,
-            receiver_id=private.receiver_id,
+            receiver_id=private.sender_id,
             message=decrypted_message,
             fileUrl=private.fileUrl,
             id_return=private.id_return,
@@ -264,14 +264,14 @@ async def process_vote(vote: schemas.Vote, session: AsyncSession, current_user: 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="An unexpected error occurred")
 
-        
-        
-async def change_message(id_messages: int, message_update: schemas.SocketUpdate,
-                         session: AsyncSession, 
+
+
+async def change_message(message_id: int, message_update: schemas.SocketUpdate,
+                         session: AsyncSession,
                          current_user: models.User):
-    
-    
-    query = select(models.PrivateMessage).where(models.PrivateMessage.id == id_messages, models.PrivateMessage.sender_id == current_user.id)
+
+
+    query = select(models.PrivateMessage).where(models.PrivateMessage.id == message_id, models.PrivateMessage.sender_id == current_user.id)
     result = await session.execute(query)
     messages = result.scalar()
 
@@ -286,22 +286,38 @@ async def change_message(id_messages: int, message_update: schemas.SocketUpdate,
     return {"message": "Message updated successfully"}
 
 
-async def delete_message(id_message: int,
-                         session: AsyncSession, 
+async def delete_message(message_id: int,
+                         session: AsyncSession,
                          current_user: models.User):
-    
-    
-    query = select(models.PrivateMessage).where(models.PrivateMessage.id == id_message, models.PrivateMessage.sender_id == current_user.id)
+    """
+    Delete a message from the database.
+
+    Args:
+        message_id (int): The ID of the message to delete.
+        session (AsyncSession): The database session.
+        current_user (models.User): The current user.
+
+    Returns:
+        Dict[str, Any]: A response indicating whether the message was deleted and any errors that may have occurred.
+
+    Raises:
+        HTTPException: If an error occurs while deleting the message.
+    """
+    query = select(models.PrivateMessage).where(models.PrivateMessage.id == message_id,
+                                                models.PrivateMessage.sender_id == current_user.id)
     result = await session.execute(query)
     message = result.scalar()
 
     if message is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found or you don't have permission to delete this message")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Message not found or you don't have permission to delete this message")
 
     await session.delete(message)
     await session.commit()
 
-    return {"message": "Message deleted successfully"}
 
-
+async def get_message_by_id(message_id: int, user_id: int, session: AsyncSession):
+    message_query = select(models.PrivateMessage).where(models.PrivateMessage.id == message_id, models.PrivateMessage.receiver_id == user_id)
+    message_result = await session.execute(message_query)
+    return message_result.scalar()
     

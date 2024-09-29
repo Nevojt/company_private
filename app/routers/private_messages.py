@@ -101,32 +101,21 @@ async def web_private_endpoint(
                     await websocket.send_text(message_json)
 
                 except Exception as e:
-                    logger.error(f"Error processing vote: {e}", exc_info=True)
-                    await websocket.send_json({"message": f"Error processing change: {e}"})
+                    logger.error(f"Error processing Update: {e}", exc_info=True)
+                    await websocket.send_json({"message": f"Error processing update: {e}"})
                 
             # Block delete message       
-            elif 'delete_message' in data:
+            elif 'delete' in data:
                 try:
-                    message_data = schemas.SocketDelete(**data['delete_message'])
-                    await delete_message(message_data.id, session, user)
-                    
-                    messages = await fetch_last_private_messages(session, user.id, receiver_id)
-                    
-                    await websocket.send_json({"message": "Message deleted."})
-                    messages.reverse()
-    
-                    for message in messages:  
-                        message_json = message.model_dump_json()
-                        await websocket.send_text(message_json)
-                
-                                
+                    message_data = schemas.SocketDelete(**data['delete'])
+                    message_id = await delete_message(message_data.id, session, user)
+                    # await websocket.send_json({"delete": {"id": message_id}})
+                    await websocket.send_json({"message": "deleted"})
+
                 except Exception as e:
                     logger.error(f"Error processing delete: {e}", exc_info=True)
-                    await websocket.send_json({"message": f"Error processing change: {e}"})
-                    
+                    await websocket.send_json({"message": f"Error processing delete: {e}"})
 
-
-                
             elif 'send' in data:
                 
                 message_data = data['send']
