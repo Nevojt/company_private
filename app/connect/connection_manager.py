@@ -56,7 +56,8 @@ class ConnectionManagerPrivate:
             avatar=avatar,
             is_read=is_read,
             vote=0,
-            edited=False
+            edited=False,
+            deleted=False
         )
 
         # Серіалізація даних моделі у JSON

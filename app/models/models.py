@@ -21,6 +21,7 @@ class PrivateMessage(Base):
     fileUrl = Column(String)
     edited = Column(Boolean, server_default='false')
     id_return = Column(Integer)
+    deleted = Column(Boolean, server_default='false')
     
     
 class User(Base):

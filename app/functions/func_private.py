@@ -1,10 +1,9 @@
 
 import logging
 from fastapi import HTTPException, status
-from pydantic import ValidationError
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional, Dict
+from typing import Optional, Dict
 from sqlalchemy import and_, asc, or_, update, func
 from app.models import models
 from app.schemas import schemas
@@ -104,7 +103,8 @@ async def fetch_last_private_messages(session: AsyncSession, sender_id: int, rec
                 avatar=user.avatar if user is not None else "https://tygjaceleczftbswxxei.supabase.co/storage/v1/object/public/image_bucket/inne/image/photo_2024-06-14_19-20-40.jpg",
                 is_read=private.is_read,
                 vote=votes,
-                edited=private.edited
+                edited=private.edited,
+                deleted=private.deleted
             )
         )
     # messages.reverse()
@@ -152,7 +152,8 @@ async def fetch_one_message(message_id: int, session: AsyncSession): #-> schemas
             avatar=user.avatar if user is not None else "https://tygjaceleczftbswxxei.supabase.co/storage/v1/object/public/image_bucket/inne/image/photo_2024-06-14_19-20-40.jpg",
             is_read=private.is_read,
             vote=votes,
-            edited=private.edited
+            edited=private.edited,
+            deleted=private.deleted
         )
         wrapped_message_update = schemas.wrap_message_update(message)
         return wrapped_message_update.model_dump_json()
@@ -201,7 +202,9 @@ async def mark_messages_as_read(session: AsyncSession, user_id: int, sender_id: 
     await session.commit()
     
     
-async def process_vote(vote: schemas.Vote, session: AsyncSession, current_user: models.User):
+async def process_vote(vote: schemas.Vote,
+                       session: AsyncSession,
+                       current_user: models.User):
     """
     Processes a vote submitted by a user.
 
@@ -224,6 +227,9 @@ async def process_vote(vote: schemas.Vote, session: AsyncSession, current_user: 
         if not message:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail=f"Message with id: {vote.message_id} does not exist")
+        if message.deleted:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail="Message has been deleted")
         
         # Check if the user has already voted on this message
         vote_result = await session.execute(select(models.PrivateMessageVote).filter(
@@ -275,8 +281,11 @@ async def change_message(message_id: int, message_update: schemas.SocketUpdate,
     result = await session.execute(query)
     messages = result.scalar()
 
-    if messages is None:
+    if not messages:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found or you don't have permission to edit this message")
+
+    if messages.deleted:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Message has been deleted")
 
     messages.message = message_update.message
     messages.edited = True
@@ -312,8 +321,22 @@ async def delete_message(message_id: int,
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Message not found or you don't have permission to delete this message")
 
-    await session.delete(message)
+    message.message = None
+    message.fileUrl = None
+    message.id_return = None
+    message.deleted = True
+
+    vote_result = await session.execute(select(models.PrivateMessageVote).filter(
+        models.PrivateMessageVote.message_id == message_id,
+        models.PrivateMessageVote.user_id == current_user.id
+    ))
+    found_vote = vote_result.scalars().all()
+    for vote in found_vote:
+        await session.delete(vote)
+
+    session.add(message)
     await session.commit()
+    return message_id
 
 
 async def get_message_by_id(message_id: int, user_id: int, session: AsyncSession):

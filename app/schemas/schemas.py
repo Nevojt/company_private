@@ -20,6 +20,7 @@ class SocketModel(BaseModel):
     is_read: bool
     vote: int
     edited: bool
+    deleted: bool
 
     # Send message to chat
 class WrappedSocketMessage(BaseModel):

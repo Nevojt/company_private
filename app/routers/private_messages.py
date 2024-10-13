@@ -90,7 +90,7 @@ async def web_private_endpoint(
 
                 except Exception as e:
                     logger.error(f"Error processing vote: {e}", exc_info=True)
-                    await websocket.send_json({"message": f"Error processing vote: {e}"})
+                    await websocket.send_json({"notice": f"Error processing vote: {e}"})
 
             elif 'update' in data:
                 try:
@@ -102,19 +102,19 @@ async def web_private_endpoint(
 
                 except Exception as e:
                     logger.error(f"Error processing Update: {e}", exc_info=True)
-                    await websocket.send_json({"message": f"Error processing update: {e}"})
+                    await websocket.send_json({"notice": f"Error processing update: {e}"})
                 
             # Block delete message       
             elif 'delete' in data:
                 try:
                     message_data = schemas.SocketDelete(**data['delete'])
                     message_id = await delete_message(message_data.id, session, user)
-                    # await websocket.send_json({"delete": {"id": message_id}})
-                    await websocket.send_json({"message": "deleted"})
+                    await websocket.send_json({"deleted": {"id": message_id}})
+                    # await websocket.send_json({"notice": "deleted"})
 
                 except Exception as e:
                     logger.error(f"Error processing delete: {e}", exc_info=True)
-                    await websocket.send_json({"message": f"Error processing delete: {e}"})
+                    await websocket.send_json({"notice": f"Error processing delete: {e}"})
 
             elif 'send' in data:
                 
@@ -140,7 +140,7 @@ async def web_private_endpoint(
                     logger.info(f"Sent message: {original_message}")
                 except Exception as e:
                     logger.error(f"Error sending message: {e}", exc_info=True)
-                    await websocket.send_json({"message": f"Error sending message: {e}"})
+                    await websocket.send_json({"notice": f"Error sending message: {e}"})
 
                 if receiver_id == 2:
                     try:
@@ -163,7 +163,7 @@ async def web_private_endpoint(
                         logger.info(f"Sent GPT response: {response_sayory}")
                     except Exception as e:
                         logger.error(f"Error processing GPT query: {e}", exc_info=True)
-                        await websocket.send_json({"message": f"Error processing GPT query: {e}"})
+                        await websocket.send_json({"notice": f"Error processing GPT query: {e}"})
                         
                 
                                             
