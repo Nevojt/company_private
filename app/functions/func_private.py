@@ -125,7 +125,7 @@ async def fetch_one_message(message_id: int, session: AsyncSession): #-> schemas
     ).outerjoin(
         models.PrivateMessageVote, models.PrivateMessage.id == models.PrivateMessageVote.message_id
     ).outerjoin(
-        models.User, models.PrivateMessage.receiver_id == models.User.id
+        models.User, models.PrivateMessage.sender_id == models.User.id
     ).filter(
         models.PrivateMessage.id == message_id
     ).group_by(
