@@ -48,30 +48,27 @@ async def web_private_endpoint(
     - Disconnects on WebSocket disconnect event.
     """
     
-    
-    user = await oauth2.get_current_user(token, session)
-    recipient = await get_recipient_by_id(session, receiver_id)
-    if not recipient:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Recipient not found.")
+    try:
+        user = await oauth2.get_current_user(token, session)
+        recipient = await get_recipient_by_id(session, receiver_id)
+        if not recipient:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Recipient not found.")
+    except Exception as error_get_user:
+        logger.error(f"Error getting user: {error_get_user}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
    
     await manager.connect(websocket, user.id, receiver_id)
     await mark_messages_as_read(session, user.id, receiver_id)
 
     messages = await fetch_last_private_messages(session, user.id, receiver_id)
-    # messages.reverse()
-    await send_messages_via_websocket(messages, websocket)
 
-    #
-    #
-    # for message in messages:
-    #     message_json = message.json()
-    #     await websocket.send_text(message_json)
+    await send_messages_via_websocket(messages, websocket)
     
     async def periodic_task():
         while True:
             await mark_messages_as_read(session, user.id, receiver_id)
-            await asyncio.sleep(1)  # чекає 1 секунду
+            await asyncio.sleep(1) 
     
     task = asyncio.create_task(periodic_task())
 

@@ -18,6 +18,6 @@ async def test_mark_messages_as_read(mocker, session, user):
     session.execute.assert_called_once_with(
         update(models.PrivateMessage)
         .where(models.PrivateMessage.recipient_id == user.id,
-               models.PrivateMessage.is_read == True)
+               models.PrivateMessage.is_read)
         .values(is_read=False)
     )

@@ -13,7 +13,7 @@ Base = declarative_base()
 ASINC_SQLALCHEMY_DATABASE_URL = f'postgresql+asyncpg://{settings.database_name}:{settings.database_password}@{settings.database_hostname}:{settings.database_port}/{settings.database_username}'
 
 engine_asinc = create_async_engine(ASINC_SQLALCHEMY_DATABASE_URL)
-async_session_maker = sessionmaker(engine_asinc, class_=AsyncSession, expire_on_commit=False)
+async_session_maker = sessionmaker(bind=engine_asinc, class_=AsyncSession, expire_on_commit=False)
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
@@ -30,6 +30,6 @@ while True:
         break
 
     except Exception as error:
-            print('Conection to database failed')
+            print('Connection to database failed')
             print("Error:",  error)
             time.sleep(2)

@@ -1,4 +1,4 @@
-
+import logging
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 
@@ -11,6 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.settings.config import settings
 from app.database.database import get_async_session
 
+logging.basicConfig(filename='_log/authentication.log', format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
@@ -20,19 +23,24 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
 
 async def create_access_token(data: dict, db: AsyncSession):
-    user_id = data.get("user_id")
-    user = await db.execute(select(models.User).filter(models.User.id == user_id))
-    user = user.scalar()
+    try:
+        user_id = data.get("user_id")
+        user = await db.execute(select(models.User).filter(models.User.id == user_id))
+        user = user.scalar()
 
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode = data.copy()
-    to_encode.update({
-        "exp": expire,
-        "password_changed": str(user.password_changed)
-    })
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        to_encode = data.copy()
+        to_encode.update({
+            "exp": expire,
+            "password_changed": str(user.password_changed)
+        })
 
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+    except Exception as e:
+        logger.error(f"Create access token error: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Create access token error {e}")
 
 
 async def verify_access_token(token: str, credentials_exception, db: AsyncSession):
@@ -49,7 +57,8 @@ async def verify_access_token(token: str, credentials_exception, db: AsyncSessio
             raise credentials_exception
 
         token_data = schemas.TokenData(id=user_id)
-    except JWTError:
+    except JWTError as e:
+        logger.error(f"Invalid token {e}", exc_info=True)
         raise credentials_exception
 
     return token_data
@@ -62,14 +71,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme),
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"}
     )
+    try:
+        token = await verify_access_token(token, credentials_exception, db)
 
-    token = await verify_access_token(token, credentials_exception, db)
+        user = await db.execute(select(models.User).filter(models.User.id == token.id))
+        user = user.scalar()
 
-    user = await db.execute(select(models.User).filter(models.User.id == token.id))
-    user = user.scalar()
+        if user is None:
+            raise credentials_exception
 
-
-    if user is None:
+        return user
+    except Exception as e:
+        logger.error(f"Error verifying access token: {e}", exc_info=True)
         raise credentials_exception
-
-    return user
