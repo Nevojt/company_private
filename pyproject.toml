@@ -1,0 +1,44 @@
+[project]
+name = "private"
+version = "0.1.0"
+description = "This is the  private message socket program"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "annotated-types",
+    "anyio",
+    "async-timeout",
+    "asyncpg",
+    "cffi",
+    "click",
+    "cryptography",
+    "ecdsa",
+    "exceptiongroup",
+    "fastapi",
+    "greenlet",
+    "h11",
+    "httptools",
+    "openai>=1.52.2",
+    "passlib",
+    "psycopg2-binary",
+    "pyasn1",
+    "pycparser",
+    "pydantic",
+    "pydantic-settings",
+    "pydantic_core",
+    "python-dotenv",
+    "python-jose",
+    "pytz",
+    "PyYAML",
+    "rsa",
+    "ruff>=0.7.1",
+    "six",
+    "sniffio",
+    "SQLAlchemy",
+    "starlette",
+    "typing_extensions",
+    "uvicorn",
+    "uvloop",
+    "watchfiles",
+    "websockets",
+]

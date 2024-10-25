@@ -17,10 +17,15 @@ from cryptography.fernet import Fernet, InvalidToken
 key = settings.key_crypto
 cipher = Fernet(key)
 
+logging.basicConfig(filename='_log/func_vote.log', format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+
 def is_base64(s):
     try:
         return base64.b64encode(base64.b64decode(s)).decode('utf-8') == s
-    except Exception:
+    except Exception as e:
+        # print(f"Error: Failed to base64 decode {e}")
         return False
 
 async def async_encrypt(data: Optional[str]):
@@ -45,8 +50,6 @@ async def async_decrypt(encoded_data: Optional[str]):
     except InvalidToken:
         return None  
     
-logging.basicConfig(filename='_log/func_vote.log', format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 
 
@@ -171,10 +174,7 @@ async def get_recipient_by_id(session: AsyncSession, receiver_id: id):
 
 
 async def unique_user_name_id(user_id: int, user_name: str):
-    unique_user_name_id = f"{user_id}-{user_name}"
-
-    
-    return unique_user_name_id
+    return f"{user_id}-{user_name}"
 
 
 
