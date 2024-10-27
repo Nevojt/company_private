@@ -9,6 +9,7 @@ from ..security import oauth2
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.functions.func_private import change_message, delete_message, fetch_last_private_messages, mark_messages_as_read, process_vote
 from app.functions.func_private import get_recipient_by_id, send_messages_via_websocket, fetch_one_message
+from app.functions.fcm_sent_message import send_notifications_to_user
 from app.AI import sayory
 
 # Налаштування логування
@@ -107,7 +108,7 @@ async def web_private_endpoint(
                     message_data = schemas.SocketDelete(**data['delete'])
                     message_id = await delete_message(message_data.id, session, user)
                     await websocket.send_json({"deleted": {"id": message_id}})
-                    # await websocket.send_json({"notice": "deleted"})
+
 
                 except Exception as e:
                     logger.error(f"Error processing delete: {e}", exc_info=True)
@@ -134,6 +135,13 @@ async def web_private_endpoint(
                         is_read=True
                     )
                     await mark_messages_as_read(session, user.id, receiver_id)
+
+                    if await send_notifications_to_user(message=original_message,
+                                                      sender=user.user_name,
+                                                      recipient_id=receiver_id,
+                                                      session=session):
+                        print("Sent notification")
+
                     logger.info(f"Sent message: {original_message}")
                 except Exception as e:
                     logger.error(f"Error sending message: {e}", exc_info=True)

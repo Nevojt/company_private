@@ -15,6 +15,7 @@ dependencies = [
     "ecdsa",
     "exceptiongroup",
     "fastapi",
+    "firebase-admin>=6.5.0",
     "greenlet",
     "h11",
     "httptools",

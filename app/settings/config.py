@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int
     key_crypto: str
     openai_api_key: str
+    google_services: str
     
     model_config = SettingsConfigDict(env_file = ".env")
 

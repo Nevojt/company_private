@@ -35,6 +35,7 @@ MANIFEST
 start_uvicorn
 .idea
 .venv-private
+sayorama*.json
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

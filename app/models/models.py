@@ -22,6 +22,7 @@ class PrivateMessage(Base):
     edited = Column(Boolean, server_default='false')
     id_return = Column(Integer)
     deleted = Column(Boolean, server_default='false')
+    is_sent = Column(Boolean, default=False)
     
     
 class User(Base):
@@ -49,4 +50,16 @@ class PrivateMessageVote(Base):
     
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     message_id = Column(Integer, ForeignKey("private_messages.id", ondelete="CASCADE"), primary_key=True)
-    dir = Column(Integer) 
+    dir = Column(Integer)
+
+
+
+class FCMTokenManager(Base):
+    __tablename__ = 'fcm_token_manager'
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
+    fcm_token = Column(String, nullable=False)
+    platform = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))

@@ -5,9 +5,11 @@ from fastapi import WebSocket
 from app.database.database import async_session_maker
 from app.models import models
 from app.schemas import schemas
-from sqlalchemy import insert
+from sqlalchemy import insert, update
 from typing import Dict, Optional, Tuple
 from app.security.crypto_messages import async_encrypt
+from app.functions.fcm_sent_message import send_notifications_to_user
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 # Налаштування логування
@@ -43,7 +45,7 @@ class ConnectionManagerPrivate:
         current_time_utc = datetime.now(timezone)
         try:
             message_id = await self.add_private_all_to_database(sender_id, receiver_id, message, file, id_return, is_read)
-
+            await self.mark_as_sent_message(message_id)
             # SocketModel
             socket_message = schemas.SocketModel(
                 created_at=current_time_utc,
@@ -71,6 +73,8 @@ class ConnectionManagerPrivate:
 
             if recipient_to_sender in self.active_connections:
                 await self.active_connections[recipient_to_sender].send_text(message_json)
+
+                logger.info("Notification sent to user")
         except Exception as e:
             logger.error(f"Error sending private message: {e}", exc_info=True)
 
@@ -92,3 +96,13 @@ class ConnectionManagerPrivate:
                 return message_id
         except Exception as e:
             logger.error(f"Error adding message to database: {e}", exc_info=True)
+
+    @staticmethod
+    async def mark_as_sent_message(message_id: int):
+        async with async_session_maker() as session:
+            await session.execute(
+                update(models.PrivateMessage)
+                .where(models.PrivateMessage.id == message_id)
+                .values(is_sent=True)
+            )
+            await session.commit()
