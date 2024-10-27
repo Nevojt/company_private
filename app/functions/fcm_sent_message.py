@@ -28,18 +28,18 @@ async def send_notifications_to_user(
 ):
     try:
         fcm_tokens = await get_user_fcm_tokens(session, recipient_id)
-
-        message = messaging.Message(
-            notification=messaging.Notification(
-                title=sender,
-                body=message,
-            ),
-            token=fcm_tokens[0]
-        )
-        print(message)
-        # response = messaging.send_each(message)
-        response = messaging.send(message)
-        print(response)
+        if not fcm_tokens:
+            logger.info("No FCM tokens found for user")
+            return
+        for token in fcm_tokens:
+            message = messaging.Message(
+                notification=messaging.Notification(
+                    title=sender,
+                    body=message,
+                ),
+                token=token
+            )
+            response = messaging.send(message)
 
         logger.info("Notifications sent to user")
     except Exception as e:

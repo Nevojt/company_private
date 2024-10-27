@@ -60,7 +60,7 @@ async def web_private_endpoint(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
    
     await manager.connect(websocket, user.id, receiver_id)
-    await mark_messages_as_read(session, user.id, receiver_id)
+    await mark_messages_as_read(user.id, receiver_id)
 
     messages = await fetch_last_private_messages(session, user.id, receiver_id)
 
@@ -134,7 +134,7 @@ async def web_private_endpoint(
                         id_return=original_message_id,
                         is_read=True
                     )
-                    await mark_messages_as_read(session, user.id, receiver_id)
+                    await mark_messages_as_read(user.id, receiver_id)
 
                     if await send_notifications_to_user(message=original_message,
                                                       sender=user.user_name,

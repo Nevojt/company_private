@@ -5,6 +5,8 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy import and_, asc, or_, update, func
+
+from app.database.database import async_session_maker
 from app.models import models
 from app.schemas import schemas
 from app.schemas.schemas import SocketModel
@@ -164,12 +166,12 @@ async def get_recipient_by_id(session: AsyncSession, receiver_id: id):
 
 
 
-async def mark_messages_as_read(session: AsyncSession, user_id: int, sender_id: int):
+async def mark_messages_as_read(user_id: int, sender_id: int):
     """
     Marks all private messages sent by a specific user as unread for a specific recipient.
 
     Args:
-        session (AsyncSession): The database session.
+
         user_id (int): The ID of the recipient.
         sender_id (int): The ID of the user who sent the messages.
 
@@ -179,18 +181,19 @@ async def mark_messages_as_read(session: AsyncSession, user_id: int, sender_id: 
     Raises:
         HTTPException: If an error occurs while updating the database.
     """
-    try:
-        await session.execute(
-            update(models.PrivateMessage)
-            .where(models.PrivateMessage.receiver_id == user_id,
-                   models.PrivateMessage.is_read).filter(models.PrivateMessage.sender_id == sender_id)
-            .values(is_read=False)
-        )
-        await session.commit()
-    except Exception as e:
-        logger.error(f"Error marking messages as read: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail=f"Failed to mark messages as read {e}")
+    async with async_session_maker() as session:
+        try:
+            await session.execute(
+                update(models.PrivateMessage)
+                .where(models.PrivateMessage.receiver_id == user_id,
+                       models.PrivateMessage.is_read).filter(models.PrivateMessage.sender_id == sender_id)
+                .values(is_read=False)
+            )
+            await session.commit()
+        except Exception as e:
+            logger.error(f"Error marking messages as read: {e}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                                detail=f"Failed to mark messages as read {e}")
     
 vote_lock = asyncio.Lock()
 async def process_vote(vote: schemas.Vote,
