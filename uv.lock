@@ -2,8 +2,8 @@ version = 1
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version < '3.13' and platform_python_implementation != 'PyPy'",
-    "python_full_version < '3.13' and platform_python_implementation == 'PyPy'",
     "python_full_version >= '3.13' and platform_python_implementation != 'PyPy'",
+    "python_full_version < '3.13' and platform_python_implementation == 'PyPy'",
     "python_full_version >= '3.13' and platform_python_implementation == 'PyPy'",
 ]
 
@@ -247,16 +247,16 @@ wheels = [
 
 [[package]]
 name = "fastapi"
-version = "0.115.3"
+version = "0.115.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "starlette" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a9/ce/b64ce344d7b13c0768dc5b131a69d52f57202eb85839408a7637ca0dd7e2/fastapi-0.115.3.tar.gz", hash = "sha256:c091c6a35599c036d676fa24bd4a6e19fa30058d93d950216cdc672881f6f7db", size = 300453 }
+sdist = { url = "https://files.pythonhosted.org/packages/a9/db/5781f19bd30745885e0737ff3fdd4e63e7bc691710f9da691128bb0dc73b/fastapi-0.115.4.tar.gz", hash = "sha256:db653475586b091cb8b2fec2ac54a680ac6a158e07406e1abae31679e8826349", size = 300737 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/57/95/4c5b79e7ca1f7b372d16a32cad7c9cc6c3c899200bed8f45739f4415cfae/fastapi-0.115.3-py3-none-any.whl", hash = "sha256:8035e8f9a2b0aa89cea03b6c77721178ed5358e1aea4cd8570d9466895c0638c", size = 94647 },
+    { url = "https://files.pythonhosted.org/packages/99/f6/af0d1f58f86002be0cf1e2665cdd6f7a4a71cdc8a7a9438cdc9e3b5375fe/fastapi-0.115.4-py3-none-any.whl", hash = "sha256:0b504a063ffb3cf96a5e27dc1bc32c80ca743a2528574f9cdc77daa2d31b4742", size = 94732 },
 ]
 
 [[package]]
@@ -278,7 +278,7 @@ wheels = [
 
 [[package]]
 name = "google-api-core"
-version = "2.21.0"
+version = "2.22.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-auth" },
@@ -287,9 +287,9 @@ dependencies = [
     { name = "protobuf" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/28/c8/046abf3ea11ec9cc3ea6d95e235a51161039d4a558484a997df60f9c51e9/google_api_core-2.21.0.tar.gz", hash = "sha256:4a152fd11a9f774ea606388d423b68aa7e6d6a0ffe4c8266f74979613ec09f81", size = 159313 }
+sdist = { url = "https://files.pythonhosted.org/packages/00/c2/425f97c2087affbd452a05d3faa08d97de333f2ca554733e1becab55ee4e/google_api_core-2.22.0.tar.gz", hash = "sha256:26f8d76b96477db42b55fd02a33aae4a42ec8b86b98b94969b7333a2c828bf35", size = 159700 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/ef/79fa8388c95edbd8fe36c763259dade36e5cb562dcf3e85c0e32070dc9b0/google_api_core-2.21.0-py3-none-any.whl", hash = "sha256:6869eacb2a37720380ba5898312af79a4d30b8bca1548fb4093e0697dc4bdf5d", size = 156437 },
+    { url = "https://files.pythonhosted.org/packages/ba/7b/1137a9811be73d8ff8238eb2d9f60f0bc0bb6a1edd87f9d47557ab937a2b/google_api_core-2.22.0-py3-none-any.whl", hash = "sha256:a6652b6bd51303902494998626653671703c420f6f4c88cfd3f50ed723e9d021", size = 156538 },
 ]
 
 [package.optional-dependencies]
@@ -701,6 +701,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "rsa" },
     { name = "ruff" },
+    { name = "sentry-sdk", extra = ["fastapi"] },
     { name = "six" },
     { name = "sniffio" },
     { name = "sqlalchemy" },
@@ -742,6 +743,7 @@ requires-dist = [
     { name = "pyyaml" },
     { name = "rsa" },
     { name = "ruff", specifier = ">=0.7.1" },
+    { name = "sentry-sdk", extras = ["fastapi"], specifier = ">=2.17.0" },
     { name = "six" },
     { name = "sniffio" },
     { name = "sqlalchemy" },
@@ -1035,6 +1037,24 @@ wheels = [
 ]
 
 [[package]]
+name = "sentry-sdk"
+version = "2.17.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "certifi" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b1/83/7d0956a71ac894717099be3669ca7b8f164bccbcfb570b2f02817d0a0068/sentry_sdk-2.17.0.tar.gz", hash = "sha256:dd0a05352b78ffeacced73a94e86f38b32e2eae15fff5f30ca5abb568a72eacf", size = 290959 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/10/63/8e80fff3aa15488bc332ede44165a397a29bb13ec4a4b2236299e3b66067/sentry_sdk-2.17.0-py2.py3-none-any.whl", hash = "sha256:625955884b862cc58748920f9e21efdfb8e0d4f98cca4ab0d3918576d5b606ad", size = 314520 },
+]
+
+[package.optional-dependencies]
+fastapi = [
+    { name = "fastapi" },
+]
+
+[[package]]
 name = "six"
 version = "1.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1083,26 +1103,26 @@ wheels = [
 
 [[package]]
 name = "starlette"
-version = "0.41.0"
+version = "0.41.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/78/53/c3a36690a923706e7ac841f649c64f5108889ab1ec44218dac45771f252a/starlette-0.41.0.tar.gz", hash = "sha256:39cbd8768b107d68bfe1ff1672b38a2c38b49777de46d2a592841d58e3bf7c2a", size = 2573755 }
+sdist = { url = "https://files.pythonhosted.org/packages/3e/da/1fb4bdb72ae12b834becd7e1e7e47001d32f91ec0ce8d7bc1b618d9f0bd9/starlette-0.41.2.tar.gz", hash = "sha256:9834fd799d1a87fd346deb76158668cfa0b0d56f85caefe8268e2d97c3468b62", size = 2573867 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/35/c6/a4443bfabf5629129512ca0e07866c4c3c094079ba4e9b2551006927253c/starlette-0.41.0-py3-none-any.whl", hash = "sha256:a0193a3c413ebc9c78bff1c3546a45bb8c8bcb4a84cae8747d650a65bd37210a", size = 73216 },
+    { url = "https://files.pythonhosted.org/packages/54/43/f185bfd0ca1d213beb4293bed51d92254df23d8ceaf6c0e17146d508a776/starlette-0.41.2-py3-none-any.whl", hash = "sha256:fbc189474b4731cf30fcef52f18a8d070e3f3b46c6a04c97579e85e6ffca942d", size = 73259 },
 ]
 
 [[package]]
 name = "tqdm"
-version = "4.66.5"
+version = "4.66.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "platform_system == 'Windows'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/58/83/6ba9844a41128c62e810fddddd72473201f3eacde02046066142a2d96cc5/tqdm-4.66.5.tar.gz", hash = "sha256:e1020aef2e5096702d8a025ac7d16b1577279c9d63f8375b63083e9a5f0fcbad", size = 169504 }
+sdist = { url = "https://files.pythonhosted.org/packages/e9/34/bef135b27fe1864993a5284ad001157ee9b5538e859ac90f5b0e8cc8c9ec/tqdm-4.66.6.tar.gz", hash = "sha256:4bdd694238bef1485ce839d67967ab50af8f9272aab687c0d7702a01da0be090", size = 169533 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/48/5d/acf5905c36149bbaec41ccf7f2b68814647347b72075ac0b1fe3022fdc73/tqdm-4.66.5-py3-none-any.whl", hash = "sha256:90279a3770753eafc9194a0364852159802111925aa30eb3f9d85b0e805ac7cd", size = 78351 },
+    { url = "https://files.pythonhosted.org/packages/41/73/02342de9c2d20922115f787e101527b831c0cffd2105c946c4a4826bcfd4/tqdm-4.66.6-py3-none-any.whl", hash = "sha256:223e8b5359c2efc4b30555531f09e9f2f3589bcd7fdd389271191031b49b7a63", size = 78326 },
 ]
 
 [[package]]
