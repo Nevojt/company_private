@@ -4,7 +4,6 @@ import logging
 from .func_notifications import get_user_fcm_tokens
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
 import firebase_admin
 from firebase_admin import credentials, messaging
 from app.settings.config import settings

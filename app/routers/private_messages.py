@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, status
+from fastapi import BackgroundTasks
 from app.connect.connection_manager import ConnectionManagerPrivate
 from app.database.database import get_async_session
 from app.schemas import schemas
@@ -25,12 +26,12 @@ manager = ConnectionManagerPrivate()
     
 
 @router.websocket("/private/{receiver_id}")
-async def web_private_endpoint(
-    websocket: WebSocket,
-    receiver_id: int,
-    token: str,
-    session: AsyncSession = Depends(get_async_session)
-):
+async def web_private_endpoint(background_tasks: BackgroundTasks,
+                            websocket: WebSocket,
+                            receiver_id: int,
+                            token: str,
+                            session: AsyncSession = Depends(get_async_session)
+                            ):
     
     """
     WebSocket endpoint for handling private messaging between users.
@@ -136,11 +137,11 @@ async def web_private_endpoint(
                     )
                     await mark_messages_as_read(user.id, receiver_id)
 
-                    if await send_notifications_to_user(message=original_message,
+                    background_tasks.add_task(await send_notifications_to_user(message=original_message,
                                                       sender=user.user_name,
                                                       recipient_id=receiver_id,
-                                                      session=session):
-                        print("Sent notification")
+                                                      session=session))
+
 
                     logger.info(f"Sent message: {original_message}")
                 except Exception as e:
