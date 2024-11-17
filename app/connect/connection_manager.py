@@ -1,6 +1,7 @@
+from uuid import UUID
 from datetime import datetime
 import pytz
-import logging
+from _log_config.log_config import get_logger
 from fastapi import WebSocket
 from app.database.database import async_session_maker
 from app.models import models
@@ -8,13 +9,9 @@ from app.schemas import schemas
 from sqlalchemy import insert, update
 from typing import Dict, Optional, Tuple
 from app.security.crypto_messages import async_encrypt
-from app.functions.fcm_sent_message import send_notifications_to_user
-from sqlalchemy.ext.asyncio import AsyncSession
-
 
 # Налаштування логування
-logging.basicConfig(filename='_log/connect_manager.log', format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+logger = get_logger('connect_manager', 'connect_manager.log')
 
 
 
@@ -22,21 +19,22 @@ logger = logging.getLogger(__name__)
        # Connecting Private Messages     
 class ConnectionManagerPrivate:
     def __init__(self):
-        self.active_connections: Dict[Tuple[int, int], WebSocket] = {}
+        self.active_connections: Dict[Tuple[UUID, UUID], WebSocket] = {}
 
-    async def connect(self, websocket: WebSocket, user_id: int, recipient_id: int):
+    async def connect(self, websocket: WebSocket, user_id: UUID, recipient_id: UUID):
         await websocket.accept()
         self.active_connections[(user_id, recipient_id)] = websocket
 
-    async def disconnect(self, user_id: int, recipient_id: int):
+    async def disconnect(self, user_id: UUID, recipient_id: UUID):
         self.active_connections.pop((user_id, recipient_id), None)
 
         
-    async def send_private_all(self, message: Optional[str], file: Optional[str],
-                               sender_id: int, receiver_id: int,
-                               user_name: str, verified: bool,
-                               avatar: str, id_return: Optional[int],
-                               is_read: bool):
+    async def send_private_all(self, message: Optional[str], fileUrl: Optional[str],
+                            voiceUrl: Optional[str], videoUrl: Optional[str],
+                            sender_id: UUID, receiver_id: UUID,
+                            user_name: str, verified: bool,
+                            avatar: str, id_return: Optional[UUID],
+                            is_read: bool):
         
         sender_to_recipient = (sender_id, receiver_id)
         recipient_to_sender = (receiver_id, sender_id)
@@ -44,15 +42,19 @@ class ConnectionManagerPrivate:
         timezone = pytz.timezone('UTC')
         current_time_utc = datetime.now(timezone)
         try:
-            message_id = await self.add_private_all_to_database(sender_id, receiver_id, message, file, id_return, is_read)
+            message_id = await self.add_private_all_to_database(sender_id, receiver_id, message,
+                                                                fileUrl, voiceUrl, videoUrl,
+                                                                id_return, is_read)
             await self.mark_as_sent_message(message_id)
             # SocketModel
-            socket_message = schemas.SocketModel(
+            socket_message = schemas.ChatMessagesSchema(
                 created_at=current_time_utc,
                 id=message_id,
                 receiver_id=sender_id,
                 message=message,
-                fileUrl=file,
+                fileUrl=fileUrl,
+                voiceUrl=voiceUrl,
+                videoUrl=videoUrl,
                 id_return=id_return,
                 user_name=user_name,
                 verified=verified,
@@ -64,7 +66,7 @@ class ConnectionManagerPrivate:
             )
 
             # Серіалізація даних моделі у JSON
-            wrapped_message = schemas.wrap_message(socket_message)
+            wrapped_message = await schemas.wrap_message(socket_message)
             message_json = wrapped_message.model_dump_json()
 
 
@@ -80,14 +82,16 @@ class ConnectionManagerPrivate:
 
 
     @staticmethod
-    async def add_private_all_to_database(sender_id: int, receiver_id: int,
-                                          message: Optional[str], file: Optional[str],
+    async def add_private_all_to_database(sender_id: UUID, receiver_id: UUID,
+                                          message: Optional[str], fileUrl: Optional[str],
+                                          voiceUrl: Optional[str], videoUrl: Optional[str],
                                           id_return: Optional[int], is_read: bool):
         try:
             encrypt_message = await async_encrypt(message)
             async with async_session_maker() as session:
                 stmt = insert(models.PrivateMessage).values(sender_id=sender_id, receiver_id=receiver_id,message=encrypt_message,
-                                                            is_read=is_read, fileUrl=file, id_return=id_return
+                                                            is_read=is_read, fileUrl=fileUrl, voiceUrl=voiceUrl,
+                                                            videoUrl=videoUrl, id_return=id_return
                                                             )
                 result = await session.execute(stmt)
                 await session.commit()
@@ -98,7 +102,7 @@ class ConnectionManagerPrivate:
             logger.error(f"Error adding message to database: {e}", exc_info=True)
 
     @staticmethod
-    async def mark_as_sent_message(message_id: int):
+    async def mark_as_sent_message(message_id: UUID):
         async with async_session_maker() as session:
             await session.execute(
                 update(models.PrivateMessage)

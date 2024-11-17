@@ -1,4 +1,4 @@
-
+from uuid import UUID
 from typing import List
 import logging
 from app.models import models
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 
-async def get_user_fcm_tokens(session: AsyncSession, user_id: int) -> List[str]:
+async def get_user_fcm_tokens(user_id: UUID, session: AsyncSession, ) -> List[str]:
     result = await session.execute(
         select(models.FCMTokenManager.fcm_token).where(models.FCMTokenManager.user_id == user_id)
     )

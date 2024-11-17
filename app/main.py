@@ -26,6 +26,11 @@ app = FastAPI(
     title="Private Messages API",
     description="API for private messages",
     version="0.1.0",
+    license_info={
+        "name": "Apache License",
+        "version": "2.0.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    }
 )
 
 origins = ["*"]

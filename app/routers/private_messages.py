@@ -1,6 +1,6 @@
 import asyncio
-import logging
-
+from _log_config.log_config import get_logger
+from uuid import UUID
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, status
 from fastapi import BackgroundTasks
 from app.connect.connection_manager import ConnectionManagerPrivate
@@ -10,12 +10,11 @@ from ..security import oauth2
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.functions.func_private import change_message, delete_message, fetch_last_private_messages, mark_messages_as_read, process_vote
 from app.functions.func_private import get_recipient_by_id, send_messages_via_websocket, fetch_one_message
-from app.functions.fcm_sent_message import send_notifications_to_user
+from app.functions.fcm_sent_message import send_notifications_private_message
 from app.AI import sayory
 
 # Налаштування логування
-logging.basicConfig(filename='_log/private_message.log', format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+logger = get_logger('private_message', 'private_message.log')
 
 router = APIRouter()
 manager = ConnectionManagerPrivate()
@@ -28,7 +27,7 @@ manager = ConnectionManagerPrivate()
 @router.websocket("/private/{receiver_id}")
 async def web_private_endpoint(background_tasks: BackgroundTasks,
                             websocket: WebSocket,
-                            receiver_id: int,
+                            receiver_id: UUID,
                             token: str,
                             session: AsyncSession = Depends(get_async_session)
                             ):
@@ -52,7 +51,7 @@ async def web_private_endpoint(background_tasks: BackgroundTasks,
     
     try:
         user = await oauth2.get_current_user(token, session)
-        recipient = await get_recipient_by_id(session, receiver_id)
+        recipient = await get_recipient_by_id(receiver_id, session)
         if not recipient:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="Recipient not found.")
@@ -63,13 +62,13 @@ async def web_private_endpoint(background_tasks: BackgroundTasks,
     await manager.connect(websocket, user.id, receiver_id)
     await mark_messages_as_read(user.id, receiver_id)
 
-    messages = await fetch_last_private_messages(session, user.id, receiver_id)
+    messages = await fetch_last_private_messages(receiver_id, user.id, session)
 
     await send_messages_via_websocket(messages, websocket)
     
     async def periodic_task():
         while True:
-            await mark_messages_as_read(session, user.id, receiver_id)
+            await mark_messages_as_read(user.id, receiver_id)
             await asyncio.sleep(1) 
     
     task = asyncio.create_task(periodic_task())
@@ -93,7 +92,7 @@ async def web_private_endpoint(background_tasks: BackgroundTasks,
 
             elif 'update' in data:
                 try:
-                    message_data = schemas.SocketUpdate(**data['update'])
+                    message_data = schemas.ChatUpdateMessage(**data['update'])
                     await change_message(message_data.id, message_data, session, user)
 
                     message_json = await fetch_one_message(message_data.id, session)
@@ -106,7 +105,7 @@ async def web_private_endpoint(background_tasks: BackgroundTasks,
             # Block delete message       
             elif 'delete' in data:
                 try:
-                    message_data = schemas.SocketDelete(**data['delete'])
+                    message_data = schemas.ChatMessageDelete(**data['delete'])
                     message_id = await delete_message(message_data.id, session, user)
                     await websocket.send_json({"deleted": {"id": message_id}})
 
@@ -121,12 +120,16 @@ async def web_private_endpoint(background_tasks: BackgroundTasks,
                 original_message_id = message_data['original_message_id']
                 original_message = message_data['message']
                 file_url = message_data['fileUrl']
+                voice_url = message_data['voiceUrl']
+                video_url = message_data['videoUrl']
                     
                 try:
 
                     await manager.send_private_all(
                         message=original_message,
-                        file=file_url,
+                        fileUrl=file_url,
+                        voiceUrl=voice_url,
+                        videoUrl=video_url,
                         receiver_id=receiver_id,
                         sender_id=user.id,
                         user_name=user.user_name,
@@ -137,10 +140,10 @@ async def web_private_endpoint(background_tasks: BackgroundTasks,
                     )
                     await mark_messages_as_read(user.id, receiver_id)
 
-                    background_tasks.add_task(await send_notifications_to_user(message=original_message,
-                                                      sender=user.user_name,
-                                                      recipient_id=receiver_id,
-                                                      session=session))
+                    background_tasks.add_task(await send_notifications_private_message(message=original_message,
+                                                                                      sender=user.user_name,
+                                                                                      recipient_id=receiver_id,
+                                                                                      session=session))
 
 
                     logger.info(f"Sent message: {original_message}")
@@ -155,7 +158,9 @@ async def web_private_endpoint(background_tasks: BackgroundTasks,
                         for message in response_sayory:
                             await manager.send_private_all(
                                 message=message,
-                                file=file_url,
+                                fileUrl=file_url,
+                                voiceUrl=voice_url,
+                                videoUrl=video_url,
                                 receiver_id=user.id,
                                 sender_id=receiver_id,
                                 user_name="SayOry",
@@ -165,7 +170,7 @@ async def web_private_endpoint(background_tasks: BackgroundTasks,
                                 is_read=True
                             )
                             await asyncio.sleep(1)
-                        await mark_messages_as_read(session, user.id, receiver_id)
+                        await mark_messages_as_read(user.id, receiver_id)
                         logger.info(f"Sent GPT response: {response_sayory}")
                     except Exception as e:
                         logger.error(f"Error processing GPT query: {e}", exc_info=True)

@@ -1,6 +1,6 @@
 
-import logging
-
+from _log_config.log_config import get_logger
+from uuid import UUID
 from .func_notifications import get_user_fcm_tokens
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,19 +14,18 @@ result = firebase_admin.initialize_app(cred)
 
 
 # Configure logging
-logging.basicConfig(filename='_log/notification.log', format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+logger = get_logger('notification', 'notification.log')
 
 
 # @router.post("/send_notification")
-async def send_notifications_to_user(
+async def send_notifications_private_message(
     message: str,
     sender: str,
-    recipient_id: int,
+    recipient_id: UUID,
     session: AsyncSession
 ):
     try:
-        fcm_tokens = await get_user_fcm_tokens(session, recipient_id)
+        fcm_tokens = await get_user_fcm_tokens(recipient_id, session)
         if not fcm_tokens:
             logger.info("No FCM tokens found for user")
             return
