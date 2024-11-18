@@ -19,11 +19,11 @@ logger = get_logger('notification', 'notification.log')
 
 # @router.post("/send_notification")
 async def send_notifications_private_message(
-    message: str,
-    sender: str,
-    recipient_id: UUID,
-    session: AsyncSession
-):
+                                        message: str,
+                                        sender: str,
+                                        recipient_id: UUID,
+                                        session: AsyncSession
+                                    ):
     try:
         fcm_tokens = await get_user_fcm_tokens(recipient_id, session)
         if not fcm_tokens:

@@ -1,12 +1,12 @@
 from uuid import UUID
 from typing import List
-import logging
+from _log_config.log_config import get_logger
 from app.models import models
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-logging.basicConfig(filename='_log/func_notification.log', format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+
+logger = get_logger('func_notification', 'func_notification.log')
 
 
 

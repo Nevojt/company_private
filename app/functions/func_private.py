@@ -12,6 +12,7 @@ from app.models import models
 from app.schemas import schemas
 from app.schemas.schemas import ChatMessagesSchema
 from app.security.crypto_messages import async_decrypt
+from app.settings.config import settings
 
 
 logger = get_logger('func_private', 'func_private.log')
@@ -346,7 +347,7 @@ async def delete_message(message_id: UUID,
 
         session.add(message)
         await session.commit()
-        return message_id
+        return str(message_id)
     except Exception as e:
         logger.error(f"Unexpected error: {e}", exc_info=True)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -365,3 +366,8 @@ async def get_message_by_id(message_id: UUID, user_id: UUID,
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Error getting message id")
     
+async def get_sayory(session: AsyncSession):
+    sayory = settings.sayory
+    sayory_query = select(models.User).where(models.User.user_name == sayory)
+    sayory_result = await session.execute(sayory_query)
+    return sayory_result.scalar_one_or_none()

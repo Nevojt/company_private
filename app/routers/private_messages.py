@@ -8,10 +8,11 @@ from app.database.database import get_async_session
 from app.schemas import schemas
 from ..security import oauth2
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.functions.func_private import change_message, delete_message, fetch_last_private_messages, mark_messages_as_read, process_vote
-from app.functions.func_private import get_recipient_by_id, send_messages_via_websocket, fetch_one_message
+from app.functions.func_private import (change_message, delete_message, fetch_last_private_messages,
+                                        mark_messages_as_read, process_vote, get_recipient_by_id,
+                                        send_messages_via_websocket, fetch_one_message, get_sayory)
 from app.functions.fcm_sent_message import send_notifications_private_message
-from app.AI import sayory
+from app.AI.sayory import ask_to_gpt
 
 # Налаштування логування
 logger = get_logger('private_message', 'private_message.log')
@@ -151,9 +152,10 @@ async def web_private_endpoint(background_tasks: BackgroundTasks,
                     logger.error(f"Error sending message: {e}", exc_info=True)
                     await websocket.send_json({"notice": f"Error sending message: {e}"})
 
-                if receiver_id == 2:
+                sayory = await get_sayory(session)
+                if receiver_id == sayory.id:
                     try:
-                        response_sayory = await sayory.ask_to_gpt(original_message)
+                        response_sayory = await ask_to_gpt(original_message)
                         
                         for message in response_sayory:
                             await manager.send_private_all(
