@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Check if a virtual environment is active
+if [[ "$VIRTUAL_ENV" != "" ]]; then
+    echo "Deactivating current virtual environment..."
+    deactivate
+fi
+
+# Activate the virtual environment
+echo "Activating virtual environment..."
+source .venv/bin/activate
+
+# Run uvicorn server
+uv run uvicorn app.main:app --reload --port 8800

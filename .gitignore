@@ -32,10 +32,10 @@ MANIFEST
 *.manifest
 *.spec
 # castom
-start_uvicorn
+#start_uvicorn
 .idea
 .venv-private
-sayorama*.json
+#sayorama*.json
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
