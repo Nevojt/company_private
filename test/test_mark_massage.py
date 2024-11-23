@@ -6,7 +6,7 @@ from app.functions.func_private import mark_messages_as_read
 
 
 
-
+# Test
 async def test_mark_messages_as_read(mocker, session, user):
     # Mocking the execute method of the session
     mocker.patch.object(session, 'execute')
